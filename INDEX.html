@@ -238,3 +238,107 @@
     </script>
 </body>
 </html>
+        // 1. Função para DAR ENTRADA em um novo produto
+        async function registrarEntrada(espacoId) {
+            // Abre janelas de pergunta para o operador preencher os dados
+            const clienteId = prompt("Digite o ID do Cliente:");
+            if (!clienteId) return;
+
+            const nomeProduto = prompt("Digite o nome do Produto:");
+            if (!nomeProduto) return;
+
+            const tempIdeal = prompt("Digite a Temperatura Ideal (°C):");
+            if (!tempIdeal) return;
+
+            const espacoM2 = prompt("Digite o espaço ocupado em M²:");
+            if (!espacoM2) return;
+
+            const dataSaida = prompt("Digite a Data de Saída (Formato: AAAA-MM-DD):");
+            if (!dataSaida) return;
+
+            // Monta o pacote de dados exatamente como a API Python espera (EntradaPayload)
+            const payload = {
+                cliente_id: parseInt(clienteId),
+                espaco_id: parseInt(espacoId),
+                nome_produto: nomeProduto,
+                temperatura_ideal: parseFloat(tempIdeal),
+                espaco_ocupado_m2: parseFloat(espacoM2),
+                validade: dataSaida
+            };
+
+            try {
+                const response = await fetch(`${BASE_URL}/camara-fria/entrada`, {
+                    method: 'POST',
+                    headers: HEADERS_PADRAO,
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error("Falha ao registrar entrada no banco.");
+
+                const dados = await response.json();
+                alert(dados.mensagem || "Entrada registrada com sucesso!");
+                
+                // Recarrega o painel e avisa outras abas abertas
+                carregarLayout();
+                notificarOutrasPaginas();
+            } catch (error) {
+                console.error("Erro na entrada:", error);
+                alert("Erro ao salvar entrada: " + error.message);
+            }
+        }
+
+        // 2. Função para DAR BAIXA (Liberar o espaço)
+        async function darBaixa(espacoId) {
+            if (!confirm(`Deseja realmente dar baixa e liberar o Espaço #${espacoId}?`)) return;
+
+            const payload = { espaco_id: parseInt(espacoId) };
+
+            try {
+                const response = await fetch(`${BASE_URL}/camara-fria/saida`, {
+                    method: 'POST',
+                    headers: HEADERS_PADRAO,
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error("Falha ao dar baixa no banco.");
+
+                const dados = await response.json();
+                alert(dados.mensagem || "Espaço liberado com sucesso!");
+                
+                carregarLayout();
+                notificarOutrasPaginas();
+            } catch (error) {
+                console.error("Erro na baixa:", error);
+                alert("Erro ao dar baixa: " + error.message);
+            }
+        }
+
+        // 3. Função para PRORROGAR a data de saída
+        async function prorrogarValidade(espacoId) {
+            const novaData = prompt("Digite a nova Data de Saída (Formato: AAAA-MM-DD):");
+            if (!novaData) return;
+
+            const payload = {
+                espaco_id: parseInt(espacoId),
+                nova_validade: novaData
+            };
+
+            try {
+                const response = await fetch(`${BASE_URL}/camara-fria/prorrogar`, {
+                    method: 'POST',
+                    headers: HEADERS_PADRAO,
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error("Falha ao prorrogar validade no banco.");
+
+                const dados = await response.json();
+                alert(dados.mensagem || "Validade prorrogada com sucesso!");
+                
+                carregarLayout();
+                notificarOutrasPaginas();
+            } catch (error) {
+                console.error("Erro ao prorrogar:", error);
+                alert("Erro ao prorrogar: " + error.message);
+            }
+        }
