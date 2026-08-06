@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel da Câmara Fria</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f4f7f6;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #0056b3;
+        }
+
+        .status-container {
+            max-width: 1000px;
+            margin: 0 auto 20px auto;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .botoes-topo {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 6px solid #ccc;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card.disponivel { border-left-color: #28a745; }
+        .card.ocupado { border-left-color: #dc3545; }
+
+        .card h3 {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .badge.disponivel { background-color: #28a745; }
+        .badge.ocupado { background-color: #dc3545; }
+
+        .card-info {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        .btn-entrada { background-color: #28a745; color: white; }
+        .btn-entrada:hover { background-color: #218838; }
+
+        .btn-saida { background-color: #dc3545; color: white; }
+        .btn-saida:hover { background-color: #c82333; }
+
+        .btn-prorrogar { background-color: #ffc107; color: #212529; }
+        .btn-prorrogar:hover { background-color: #e0a800; }
+
+        .btn-sync { background-color: #007bff; color: white; }
+        .btn-sync:hover { background-color: #0056b3; }
+
+        .btn-config { background-color: #6f42c1; color: white; }
+        .btn-config:hover { background-color: #593196; }
+
+        .btn-planta { background-color: #17a2b8; color: white; }
+        .btn-planta:hover { background-color: #138496; }
+
+        .error-message { color: #dc3545; font-weight: bold; }
+        .success-message { color: #28a745; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Monitoramento da Câmara Fria</h1>
+
+    <div class="status-container" id="status-bar">
+        <span>Status da Conexão: <strong id="status-texto">Conectando...</strong></span>
+        <div class="botoes-topo">
+            <button class="btn-planta" onclick="abrirPagina('planta_camara.html')">🗺️ Planta da Câmara</button>
+            <button class="btn-config" onclick="abrirPagina('config_espacos.html')">⚙️ Configurar Espaços</button>
+            <button class="btn-sync" onclick="notificarOutrasPaginas()">🔄 Atualizar Telas</button>
+        </div>
+    </div>
+
+    <div class="grid-container" id="grid-layout"></div>
+
+    <script>
+        const BASE_URL = 'https://film-disinfect-famished.ngrok-free.dev';
+        const HEADERS_PADRAO = {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+        };
+
+        const canalComunicacao = new BroadcastChannel('painel_camara_fria');
+
+        canalComunicacao.onmessage = (event) => {
+            if (event.data && event.data.acao === 'ATUALIZAR') {
+                carregarLayout();
+            }
+        };
+
+        function notificarOutrasPaginas() {
+            canalComunicacao.postMessage({ acao: 'ATUALIZAR' });
+        }
+
+        function abrirPagina(url) {
+            window.open(url, '_blank');
+        }
+
+        async function carregarLayout() {
+            const statusTexto = document.getElementById('status-texto');
+            const gridLayout = document.getElementById('grid-layout');
+
+            try {
+                const response = await fetch(`${BASE_URL}/camara-fria/layout`, {
+                    method: 'GET',
+                    headers: HEADERS_PADRAO
+                });
+
+                if (!response.ok) throw new Error(`Erro na requisição: ${response.status}`);
+
+                const dados = await response.json();
+                statusTexto.textContent = 'Conectado e Atualizado';
+                statusTexto.className = 'success-message';
+
+                renderizarCards(dados);
+            } catch (error) {
+                console.error('Erro na comunicação:', error);
+                statusTexto.innerHTML = `⚠️ Erro de Comunicação ou CORS!<br><small>${error.message}</small>`;
+                statusTexto.className = 'error-message';
+                gridLayout.innerHTML = '<p style="text-align:center; grid-column: 1/-1;">Não foi possível carregar os dados.</p>';
+            }
+        }
+
+        function renderizarCards(espacos) {
+            const gridLayout = document.getElementById('grid-layout');
+            gridLayout.innerHTML = '';
+
+            if (!espacos || espacos.length === 0) {
+                gridLayout.innerHTML = '<p style="text-align:center; grid-column: 1/-1;">Nenhum espaço encontrado no banco.</p>';
+                return;
+            }
+
+            espacos.forEach(item => {
+                const statusClass = item.status === 'ocupado' ? 'ocupado' : 'disponivel';
+                const statusTexto = item.status === 'ocupado' ? 'Ocupado' : 'Disponível';
+
+                const card = document.createElement('div');
+                card.className = `card ${statusClass}`;
+
+                // Alterado de Validade para Data Saída conforme solicitado
+                let conteudoProduto = item.status === 'ocupado' ? `
+                    <p><strong>Produto:</strong> ${item.nome_produto || 'N/I'}</p>
+                    <p><strong>Cliente:</strong> ${item.cliente_nome || item.cliente_id || 'N/I'}</p>
+                    <p><strong>Temp. Ideal:</strong> ${item.temperatura_ideal ? item.temperatura_ideal + ' °C' : 'N/A'}</p>
+                    <p><strong>Data Saída:</strong> ${item.validade ? new Date(item.validade).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                ` : `<p style="color: #666; font-style: italic;">Espaço livre para armazenamento.</p>`;
+
+                card.innerHTML = `
+                    <h3>Espaço #${item.espaco_id || item.id}</h3>
+                    <span class="badge ${statusClass}">${statusTexto}</span>
+                    <div class="card-info">${conteudoProduto}</div>
+                    <div class="actions">
+                        ${item.status === 'ocupado'
+                            ? `<button class="btn-saida" onclick="darBaixa(${item.espaco_id || item.id})">Dar Baixa</button>
+                               <button class="btn-prorrogar" onclick="prorrogarValidade(${item.espaco_id || item.id})">Prorrogar</button>`
+                            : `<button class="btn-entrada" onclick="registrarEntrada(${item.espaco_id || item.id})">Dar Entrada</button>`
+                        }
+                    </div>
+                `;
+                gridLayout.appendChild(card);
+            });
+        }
+
+        // Carrega as informações ao abrir a página
+        carregarLayout();
+    </script>
+</body>
+</html>

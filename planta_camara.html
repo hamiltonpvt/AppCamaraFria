@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planta Baixa - Câmara Fria 500m²</title>
+    <!-- Vincula o arquivo de estilos externo -->
+    <link rel="stylesheet" href="planta_estilos.css">
+</head>
+<body>
+    <div class="container-relatorio">
+        <div class="topo-print">
+            <div>
+                <h1 class="titulo-principal">Relatório de Ocupação Espacial (Planta Baixa)</h1>
+                <div class="data-emissao">Câmara Fria 500m² • Emissão: <span id="dataAtual"></span></div>
+            </div>
+            <div>
+                <a href="index.html" class="btn-acao">Mapa Operacional</a>
+                <button class="btn-acao btn-print" onclick="window.print()">Imprimir / Salvar PDF</button>
+            </div>
+        </div>
+
+        <!-- Painel de Filtro por Período de Saída -->
+        <div class="painel-filtro">
+            <div class="filtro-grupo">
+                <label for="dataInicio">Data de Saída (Início):</label>
+                <input type="date" id="dataInicio">
+            </div>
+            <div class="filtro-grupo">
+                <label for="dataFim">Data de Saída (Fim):</label>
+                <input type="date" id="dataFim">
+            </div>
+            <button class="btn-acao btn-filtrar" onclick="renderizarPlanta()">Filtrar Planta</button>
+            <button class="btn-acao" style="background-color: #94a3b8; margin-top: 18px;" onclick="limparFiltro()">Limpar</button>
+        </div>
+
+        <div class="legenda">
+            <div class="legenda-item"><div class="quadrado" style="background: #ffffff;"></div> Vazio / Disponível</div>
+            <div class="legenda-item"><div class="quadrado" style="background: #fee2e2; border-color: #f87171;"></div> Ocupado (Temperatura OK)</div>
+            <div class="legenda-item"><div class="quadrado" style="background: #fef3c7; border-color: #fbbf24;"></div> Alerta: Incompatibilidade Térmica</div>
+        </div>
+        
+        <div id="plantaLayout" class="mapa-layout"></div>
+    </div>
+
+    <!-- Vincula o arquivo de programação externo -->
+    <script src="planta_logica.js"></script>
+</body>
+</html>
